@@ -1,2 +1,3 @@
-flsak
+flask
+opencv-python
 requests
